@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'product.apps.ProductConfig',
+    'member.apps.MemberConfig'
 ]
 
 MIDDLEWARE = [
@@ -140,3 +141,7 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": datetime.timedelta(days=1),   #토큰 유효기간은 계속 할 수 있게 설정
     "AUTH_HEADER_TYPES": ("JWT",),
 }
+AUTH_USER_MODEL = "member.Member"
+AUTHENTICATION_BACKENDS = [
+    "member.auth.MemberAuth"
+]
