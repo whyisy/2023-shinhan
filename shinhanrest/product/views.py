@@ -1,11 +1,19 @@
 from rest_framework import generics, mixins
-from .models import Product, Comment    #또는 from memeber.models import Comment  #from .models import comment는 안됨(자세한 설명은 노션에)
-from .serializer import ProductSerializer, CommentSerializer
+from rest_framework import status
+from rest_framework.response import Response
+from .models import Product, Comment, Like  #또는 from memeber.models import Comment  #from .models import comment는 안됨(자세한 설명은 노션에)
+from .serializer import (
+    ProductSerializer, 
+    CommentSerializer, 
+    CommentCreateSerializer,
+    LikeCreateSerializer
+
+)
 from .paginations import ProductionLargePagination
 
 class ProductListView(
-    mixins.ListModelMixin,
-    mixins.CreateModelMixin, 
+    mixins.ListModelMixin,   #여러개 read
+    mixins.CreateModelMixin,  #한개 create
     generics.GenericAPIView
 ):
 # ListModelMixin = query set 이라는 리스트를 만듦
@@ -46,8 +54,8 @@ class ProductListView(
 
 
 class ProductDetailView(
-    mixins.RetrieveModelMixin,
-    mixins.DestroyModelMixin,
+    mixins.RetrieveModelMixin,   #한 개 read
+    mixins.DestroyModelMixin,    
     mixins.UpdateModelMixin,
     generics.GenericAPIView
 ):
@@ -120,9 +128,54 @@ class CommentListView(
     def get_queryset(self):
         product_id = self.kwargs.get('product_id')
         if product_id:
-            return Comment.objects.filter(product_id=product_id).order_by('-id')
+            return Comment.objects.filter(product_id=product_id).order_by('-id')   #product=product_id 해도 가능
         return Comment.objects.none()
 
     
     def get(self, request, *args, **kwargs):
         return self.list(request, args, kwargs)
+
+
+class CommentCreateView(
+    mixins.CreateModelMixin,
+    generics.GenericAPIView
+):
+    serializer_class = CommentCreateSerializer
+ 
+    # def get_queryset(self):   #안써도 됨
+    #     return Comment.objects.all()
+
+    def post(self,request, *args, **kwargs):
+        return self.create(request, args, kwargs)
+
+
+# class LikeView(    내가 한 거... ㅋㅋㅋ..
+#     mixins.CreateModelMixin,
+#     mixins.ListModelMixin,
+#     generics.GenericAPIView
+# ):
+#     serializer_class = CommentCreateSerializer
+ 
+#     # def get_queryset(self):   #안써도 됨
+#     #     return Comment.objects.all()
+
+#     def post(self,request, *args, **kwargs):
+#         return self.create(request, args, kwargs)
+
+class LikeCreateView(
+    mixins.CreateModelMixin,
+    generics.GenericAPIView
+):
+    serializer_class = LikeCreateSerializer
+
+    def get_queryset(self):
+        return Like.objects.all()
+
+    def post(self,request, *args, **kwargs):     #좋아요 한번만 기능
+        product_id = request.data.get('product')
+
+        if Like.objects.filter(member=request.user, product_id=product_id).exists():
+            Like.objects.filter(member=request.user, product_id=product_id).delete()   #좋아요 취소 기능
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        
+        return self.create(request, args, kwargs)
