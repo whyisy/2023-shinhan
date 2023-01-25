@@ -24,5 +24,7 @@ from rest_framework_simplejwt.views import (
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/product',include('product.urls')),  #product 포함하는 건 다 이 path로 보내라?
+    path('api/member', include('member.urls')),
     path('api/token',TokenObtainPairView.as_view()),
+    path('debug/', include('debug_toolbar.urls')),
 ]

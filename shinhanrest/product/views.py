@@ -1,8 +1,10 @@
 from rest_framework import generics, mixins
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+
 from .models import Product, Comment, Like  #또는 from memeber.models import Comment  #from .models import comment는 안됨(자세한 설명은 노션에)
-from .serializer import (
+from .serializers import (
     ProductSerializer, 
     CommentSerializer, 
     CommentCreateSerializer,
@@ -20,12 +22,13 @@ class ProductListView(
 # GenericAPIView = queryset을 위한 기본베이스
     serializer_class = ProductSerializer
     pagination_class = ProductionLargePagination
+    # permission_classes = [IsAuthenticated]
      
     def get_queryset(self):    #queryset : 여러 모델을 가져오는 것
         
         #인자값 받아서 filter하면 되겠네!
         
-        products = Product.objects.all()
+        products = Product.objects.all().prefetch_related('comment_set')   #내가 comment set 쓸거니까 미리 가져와(그래서 반복 안하고 한번에 가져오는 것)
 
         page = self.request.query_params.get('page',1)
         
@@ -46,7 +49,6 @@ class ProductListView(
         #Queryset
         #Serialize
         #return Response
-        print(request.user)
         return self.list(request, args, kwargs)
 
     def post(self, request, *args, **kwargs):
@@ -60,6 +62,8 @@ class ProductDetailView(
     generics.GenericAPIView
 ):
     serializer_class = ProductSerializer
+    pagination_class = ProductionLargePagination
+
 
     def get_queryset(self):
         return Product.objects.all().order_by('id')
@@ -127,8 +131,11 @@ class CommentListView(
     serializer_class = CommentSerializer
     def get_queryset(self):
         product_id = self.kwargs.get('product_id')
-        if product_id:
-            return Comment.objects.filter(product_id=product_id).order_by('-id')   #product=product_id 해도 가능
+        if product_id:    #product=product_id 해도 가능
+            return Comment.objects.filter(product_id=product_id) \
+                .select_related('member','product')\
+                .order_by('-id')   \
+                
         return Comment.objects.none()
 
     
